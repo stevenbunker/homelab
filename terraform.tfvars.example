@@ -1,0 +1,5 @@
+project_tags = {
+  project = "main"
+}
+aws_vpc_cidr = "YOUR CIDR"
+ssh_ip_allowed = "ALLOWED SSH IPS"
