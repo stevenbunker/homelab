@@ -1,11 +1,11 @@
 data "aws_caller_identity" "current" {}
 
 resource "aws_organizations_policy" "tag_policy" {
-  name = "tag-policy"
-  type = "TAG_POLICY"
-  content = jsonencode({"tags": {for tag in var.required_tags : tag=>{}}})
+  name    = "tag-policy"
+  type    = "TAG_POLICY"
+  content = jsonencode({ "tags" : { for tag in var.required_tags : tag => {} } })
   tags = {
-    Project = "compliance"
+    Project     = "compliance"
     Environment = "prod"
   }
 }

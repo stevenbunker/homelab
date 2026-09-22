@@ -18,66 +18,65 @@ data "aws_ami" "ubuntu" {
   }
 }
 
-resource "aws_instance" "ovpn_instance" {
-  ami = data.aws_ami.ubuntu.id
+resource "aws_instance" "ovpn" {
+  ami               = data.aws_ami.ubuntu.id
   instance_type     = var.instance_type
   source_dest_check = false
+  vpc_security_group_ids = [aws_security_group.ovpn.id]
   tags = {
-      Route53HostedZoneId = var.hosted_zone,
-      Route53RecordName = var.record_name
-      Project = "ovpn"
-      Environment = "prod"
-    }
+    Route53HostedZoneId = var.hosted_zone,
+    Route53RecordName   = var.record_name
+    Project             = "ovpn"
+    Environment         = "prod"
+  }
 }
 
-resource "aws_network_interface" "ovpn_eni" {
-  subnet_id       = aws_subnet.public1.id
-  description     = "Open VPN network interface"
-  security_groups = [aws_security_group.ovpn_security_group.id]
+resource "aws_network_interface" "ovpn" {
+  subnet_id         = aws_subnet.public1.id
+  description       = "Open VPN network interface"
+  security_groups   = [aws_security_group.ovpn.id]
   source_dest_check = false
   tags = {
-    Project = "ovpn"
+    Project     = "ovpn"
     Environment = "prod"
   }
 
   attachment {
-    instance     = aws_instance.ovpn_instance.id
+    instance     = aws_instance.ovpn.id
     device_index = 0
   }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "allow_https" {
-  description = "Allow HTTPS"
-  security_group_id = aws_security_group.ovpn_security_group.id
-  ip_protocol = "tcp"
-  from_port = 443
-  to_port = 443
-  cidr_ipv4 = "0.0.0.0/0"
-}
-
-resource "aws_vpc_security_group_ingress_rule" "allow_udp_1194" {
-  description = "Allow OVPN on UDP 1194"
-  security_group_id = aws_security_group.ovpn_security_group.id
-  ip_protocol = "udp"
-  from_port = 1194
-  to_port = 1194
-  cidr_ipv4 = "0.0.0.0/0"
-}
-
-resource "aws_vpc_security_group_ingress_rule" "allow_ssh" {
-  description = "Allow limited SSH"
-  security_group_id = aws_security_group.ovpn_security_group.id
-  ip_protocol = "tcp"
-  from_port = 22
-  to_port = 22
-  cidr_ipv4 = var.ssh_ip_allowed
-}
-
-resource "aws_security_group" "ovpn_security_group" {
-  vpc_id   = aws_vpc.main.id
-  description = "launch-wizard-2 created 2026-06-07T17:52:11.223Z"
+resource "aws_security_group" "ovpn" {
+  vpc_id      = aws_vpc.main.id
+  description = "Security group for Open VPN instance"
   tags = {
-    Project = "ovpn"
+    Project     = "ovpn"
     Environment = "prod"
   }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "ingress_rules" {
+  for_each                     = local.ingress_rules
+  security_group_id            = aws_security_group.ovpn.id
+  description                  = try(each.value.description, null)
+  ip_protocol                  = try(each.value.ip_protocol, "tcp")
+  from_port                    = each.value.from_port
+  to_port                      = each.value.to_port
+  cidr_ipv4                    = try(each.value.cidr_ipv4, null)
+  referenced_security_group_id = try(each.value.source_sg_id, null)
+}
+
+resource "aws_vpc_security_group_egress_rule" "egress_rules" {
+  for_each = {
+    for k, v in local.egress_rules : k => v
+    if contains(["allow_all_outbound", ], k)
+  }
+  security_group_id            = aws_security_group.ovpn.id
+  description                  = try(each.value.description, null)
+  ip_protocol                  = try(each.value.ip_protocol, "tcp")
+  from_port                    = each.value.from_port
+  to_port                      = each.value.to_port
+  cidr_ipv4                    = try(each.value.cidr_ipv4, null)
+  referenced_security_group_id = try(each.value.dest_sg_id, null)
 }

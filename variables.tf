@@ -11,7 +11,7 @@ variable "instance_type" {
 
 variable "required_tags" {
   description = "Tags to set for all resources"
-  type = list(string)
+  type        = list(string)
 }
 
 variable "aws_vpc_cidr" {
@@ -25,11 +25,45 @@ variable "ssh_ip_allowed" {
 }
 
 variable "hosted_zone" {
-  type = string
+  type        = string
   description = "Necessary tags to maintain Route53 record on EC2 Instance"
 }
 
 variable "record_name" {
-  type = string
+  type        = string
   description = "Necessary tags to maintain Route53 record on EC2 Instance"
+}
+
+# Ingress rules map:
+# Use either cidr_ipv4 OR source_sg_id
+variable "ingress_rules" {
+  type = map(object({
+    from_port    = number
+    to_port      = number
+    ip_protocol  = optional(string, "tcp")
+    cidr_ipv4    = optional(string)
+    source_sg_id = optional(string)
+    description  = optional(string)
+  }))
+}
+# Egress rules map (default allow all outbound):
+# Use either cidr_ipv4 OR dest_sg_id
+variable "egress_rules" {
+  type = map(object({
+    ip_protocol = optional(string, "-1")
+    from_port   = optional(number, 0)
+    to_port     = optional(number, 0)
+    cidr_ipv4   = optional(string)
+    dest_sg_id  = optional(string)
+    description = optional(string)
+  }))
+  default = {
+    allow_all_outbound = {
+      ip_protocol = "-1"
+      from_port   = 0
+      to_port     = 0
+      cidr_ipv4   = "0.0.0.0/0"
+      description = "Allow all outbound"
+    }
+  }
 }

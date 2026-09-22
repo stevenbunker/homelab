@@ -1,7 +1,7 @@
 provider "aws" {
   tag_policy_compliance = "error"
-  profile = "terraform"
-  region  = var.region
+  profile               = "terraform"
+  region                = var.region
   default_tags {
     tags = { managedBy = "terraform" }
   }
@@ -9,9 +9,9 @@ provider "aws" {
 
 provider "aws" {
   tag_policy_compliance = "error"
-  alias   = "west"
-  profile = "terraform"
-  region  = "us-west-1"
+  alias                 = "west"
+  profile               = "terraform"
+  region                = "us-west-1"
   default_tags {
     tags = { managedBy = "terraform" }
   }
@@ -19,9 +19,9 @@ provider "aws" {
 
 provider "aws" {
   tag_policy_compliance = "error"
-  alias   = "east"
-  profile = "terraform"
-  region  = "us-east-1"
+  alias                 = "east"
+  profile               = "terraform"
+  region                = "us-east-1"
   default_tags {
     tags = { managedBy = "terraform" }
   }
