@@ -1,18 +1,17 @@
 variable "region" {
   description = "AWS region"
   type        = string
-  default     = "us-east-1"
 }
 
 variable "instance_type" {
   description = "EC2 instance type (must be a GPU instance)"
   type        = string
-  default     = "t3.nano"
+  default     = "t3.micro"
 }
 
-variable "project_tags" {
+variable "required_tags" {
   description = "Tags to set for all resources"
-  type        = map(string)
+  type = list(string)
 }
 
 variable "aws_vpc_cidr" {
@@ -22,5 +21,15 @@ variable "aws_vpc_cidr" {
 
 variable "ssh_ip_allowed" {
   description = "CIDR notation for allowed SSH"
-  type = string  
+  type        = string
+}
+
+variable "hosted_zone" {
+  type = string
+  description = "Necessary tags to maintain Route53 record on EC2 Instance"
+}
+
+variable "record_name" {
+  type = string
+  description = "Necessary tags to maintain Route53 record on EC2 Instance"
 }
