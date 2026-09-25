@@ -3,6 +3,24 @@ variable "region" {
   type        = string
 }
 
+variable "aws_regions" {
+  description = "Allowed AWS regions"
+  type        = map(string)
+  default = {
+    us-east-1 : "east"
+    us-west-1 : "west"
+  }
+}
+
+variable "environments" {
+  description = "Allowed environment options"
+  type        = set(string)
+  default = [
+    "prod",
+    "shared",
+    "test"]
+}
+
 variable "instance_type" {
   description = "EC2 instance type (must be a GPU instance)"
   type        = string
@@ -12,6 +30,7 @@ variable "instance_type" {
 variable "required_tags" {
   description = "Tags to set for all resources"
   type        = list(string)
+  default     = ["Project", "Environment"]
 }
 
 variable "aws_vpc_cidr" {
@@ -22,16 +41,6 @@ variable "aws_vpc_cidr" {
 variable "ssh_ip_allowed" {
   description = "CIDR notation for allowed SSH"
   type        = string
-}
-
-variable "hosted_zone" {
-  type        = string
-  description = "Necessary tags to maintain Route53 record on EC2 Instance"
-}
-
-variable "record_name" {
-  type        = string
-  description = "Necessary tags to maintain Route53 record on EC2 Instance"
 }
 
 # Ingress rules map:

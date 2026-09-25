@@ -19,13 +19,13 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_instance" "ovpn" {
-  ami               = data.aws_ami.ubuntu.id
-  instance_type     = var.instance_type
-  source_dest_check = false
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type
+  source_dest_check      = false
   vpc_security_group_ids = [aws_security_group.ovpn.id]
   tags = {
-    Route53HostedZoneId = var.hosted_zone,
-    Route53RecordName   = var.record_name
+    Route53HostedZoneId = aws_route53_zone.main.zone_id,
+    Route53RecordName   = "uswest1.${aws_route53_zone.main.name}"
     Project             = "ovpn"
     Environment         = "prod"
   }
@@ -79,4 +79,24 @@ resource "aws_vpc_security_group_egress_rule" "egress_rules" {
   to_port                      = each.value.to_port
   cidr_ipv4                    = try(each.value.cidr_ipv4, null)
   referenced_security_group_id = try(each.value.dest_sg_id, null)
+}
+
+data "aws_instance" "ovpn" {
+  instance_id = aws_instance.ovpn.id
+}
+
+data "aws_route53_records" "ovpn" {
+  zone_id    = aws_route53_zone.main.zone_id
+  name_regex = "uswest1.${aws_route53_zone.main.name}"
+}
+
+resource "aws_route53_record" "ovpn" {
+
+  zone_id = aws_instance.ovpn.tags.Route53HostedZoneId
+  name    = aws_instance.ovpn.tags.Route53RecordName
+  type    = "A"
+  ttl     = "300"
+  records = (data.aws_instance.ovpn.public_ip != "" ?
+    [data.aws_instance.ovpn.public_ip, ] :
+  [for record in data.aws_route53_records.ovpn.resource_record_sets[0].resource_records : record.value])
 }
