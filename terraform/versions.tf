@@ -9,5 +9,13 @@ terraform {
       version = "~> 1.4.0"
       source  = "ansible/ansible"
     }
+    local = {
+      version = "~> 2.9"
+      source  = "hashicorp/local"
+    }
+    tls = {
+      version = "~> 4.4"
+      source  = "hashicorp/tls"
+    }
   }
 }

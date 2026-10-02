@@ -1,0 +1,4 @@
+region            = "us-east-1"
+admin_email       = "example@gmail.com"
+organization_name = "example_org"
+admin_name        = "John Doe"

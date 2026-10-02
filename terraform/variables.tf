@@ -18,7 +18,7 @@ variable "environments" {
   default = [
     "prod",
     "shared",
-    "test"]
+  "test"]
 }
 
 variable "instance_type" {
@@ -31,6 +31,11 @@ variable "required_tags" {
   description = "Tags to set for all resources"
   type        = list(string)
   default     = ["Project", "Environment"]
+}
+
+variable "allowed_ec2_os" {
+  description = "Tags to set for all resources"
+  type        = list(string)
 }
 
 variable "aws_vpc_cidr" {

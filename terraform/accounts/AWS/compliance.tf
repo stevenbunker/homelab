@@ -1,10 +1,6 @@
-data "aws_caller_identity" "current" {}
 locals {
   policies_string = templatefile(
-    "${path.module}/policies.json.tpl",
-    {
-      allowed_ec2_os = jsonencode(var.allowed_ec2_os)
-  })
+  "${path.module}/policies.json.tpl", {})
   policies_json = jsondecode(local.policies_string)
   tag_policy    = local.policies_json.tag_policy
 }
@@ -15,11 +11,11 @@ resource "aws_organizations_policy" "tag_policy" {
   content = jsonencode(local.tag_policy)
   tags = {
     Project     = "compliance"
-    Environment = "prod"
+    Environment = local.environment
   }
 }
 
 resource "aws_organizations_policy_attachment" "tagging_policy" {
   policy_id = aws_organizations_policy.tag_policy.id
-  target_id = data.aws_caller_identity.current.account_id
+  target_id = aws_organizations_organization.my.master_account_id
 }

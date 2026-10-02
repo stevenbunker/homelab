@@ -27,7 +27,8 @@ resource "aws_instance" "ovpn" {
     Route53HostedZoneId = aws_route53_zone.main.zone_id,
     Route53RecordName   = "uswest1.${aws_route53_zone.main.name}"
     Project             = "ovpn"
-    Environment         = "prod"
+    Environment         = local.environment != null && local.environment != "" ? local.environment : "prod"
+    OS_version          = "ubuntu-24.04"
   }
 }
 
@@ -81,10 +82,7 @@ resource "aws_vpc_security_group_egress_rule" "egress_rules" {
   referenced_security_group_id = try(each.value.dest_sg_id, null)
 }
 
-data "aws_instance" "ovpn" {
-  instance_id = aws_instance.ovpn.id
-}
-
+# Get the current record from  Route53
 data "aws_route53_records" "ovpn" {
   zone_id    = aws_route53_zone.main.zone_id
   name_regex = "uswest1.${aws_route53_zone.main.name}"
@@ -96,7 +94,9 @@ resource "aws_route53_record" "ovpn" {
   name    = aws_instance.ovpn.tags.Route53RecordName
   type    = "A"
   ttl     = "300"
-  records = (data.aws_instance.ovpn.public_ip != "" ?
-    [data.aws_instance.ovpn.public_ip, ] :
+  records = (aws_instance.ovpn.public_ip != "" ?
+    [aws_instance.ovpn.public_ip, ] :
+    # if the instance is stopped, it will not have a public IP, instead we'll keep the existing A record value
+    # TODO: update the lambda that tracks state to remove the A record when the state becomes stopped
   [for record in data.aws_route53_records.ovpn.resource_record_sets[0].resource_records : record.value])
 }
