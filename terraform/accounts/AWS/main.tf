@@ -52,5 +52,11 @@ resource "aws_organizations_account" "accounts" {
 resource "aws_organizations_delegated_administrator" "sso" {
   count             = can(var.organizational_accounts["shared-services"]) ? 1 : 0
   account_id        = aws_organizations_account.accounts["shared-services"].id
-  service_principal = "iam.amazonaws.com"
+  service_principal = "sso.amazonaws.com"
+}
+
+resource "aws_organizations_delegated_administrator" "account-access" {
+  count             = can(var.organizational_accounts["shared-services"]) ? 1 : 0
+  account_id        = aws_organizations_account.accounts["shared-services"].id
+  service_principal = "account-access.amazonaws.com"
 }
