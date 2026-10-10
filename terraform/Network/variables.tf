@@ -3,6 +3,7 @@ variable "region" {
   type        = string
 }
 
+
 variable "aws_regions" {
   description = "Allowed AWS regions"
   type        = map(string)

@@ -1,0 +1,16 @@
+plugin: amazon.aws.aws_ec2
+profile: ansible
+regions:
+  - us-west-1
+keyed_groups:
+  - prefix: Environment
+    key: ec2_tags.Environment
+  - prefix: Project
+    key: ec2_tags.Project
+  - prefix: OS_version
+    key: ec2_tags.OS_version
+    parent_group: "OS_family_{{ ec2_tags.OS_version | regex_replace('-(?:\\d+\\.?)*','') }}"
+  - key: placement.region
+    prefix: aws_region
+    parent_group: "aws"
+route53_enabled: true

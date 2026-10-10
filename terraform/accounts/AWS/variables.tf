@@ -84,3 +84,21 @@ variable "organization_name" {
   description = "Name of the organization to use as the root account alias"
   type        = string
 }
+
+variable "required_child_sets_and_managed_policies" {
+  description = <<EOT
+  A map of permission sets for all accounts in org account. The default is to make administrator access and Terraform execute in each account.
+  
+  Set values must be the name of managed policies in the org account
+  EOT
+  type        = map(set(string))
+  default = {
+    AdministratorAccess = [
+      "AdministratorAccess"
+    ]
+    TerraformExecute = [
+      "ReadOnlyAccess",
+      "AWSBudgetsActionsWithAWSResourceControlAccess"
+    ]
+  }
+}

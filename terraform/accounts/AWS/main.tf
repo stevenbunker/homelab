@@ -22,6 +22,7 @@ resource "aws_organizations_organization" "my" {
     "iam.amazonaws.com",
     "notifications.amazonaws.com",
     "sso.amazonaws.com",
+    "member.org.stacksets.cloudformation.amazonaws.com"
   ]
 }
 
