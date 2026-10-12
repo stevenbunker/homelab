@@ -1,0 +1,8 @@
+locals.tf
+*.tfvars
+.terraform/
+*.hcl
+import.tf
+local_llm/*
+*.tfbackend
+*state*

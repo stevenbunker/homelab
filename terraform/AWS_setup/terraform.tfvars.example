@@ -1,0 +1,10 @@
+region            = "us-east-1"
+admin_email       = "example@gmail.com"
+organization_name = "example_org"
+admin_name        = "John Doe"
+service_access_principals = [
+  "account-access.amazonaws.com",
+  "account.amazonaws.com",
+  "compute-optimizer.amazonaws.com",
+  "cost-optimization-hub.bcm.amazonaws.com",
+]

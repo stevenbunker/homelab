@@ -1,0 +1,71 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Parameters": {
+    "AdministratorAccountId": {
+      "Description": "AWS Account Id of the administrator account (the account in which StackSets will be created).",
+      "MaxLength": 12,
+      "MinLength": 12,
+      "Type": "String"
+    },
+    "AutomationExecutionPolicy": {
+      "Description": "The Policy document for automation",
+      "Type": "String"
+    },
+    "ExecutionRoleName": {
+      "Default": "AWSCloudFormationStackSetExecutionRole",
+      "Description": "The name of the execution role. Defaults to 'AWSCloudFormationStackSetExecutionRole'.",
+      "Type": "String"
+    },
+    "PolicyName": {
+      "Description": "The name of the policy to be made in child accounts",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "CustomTerraformPolicy": {
+      "Properties": {
+        "Description": "Customer managed Terraform Execute policy. This policy was created by a CloudFormation stack in the management account",
+        "ManagedPolicyName": {
+          "Ref": "PolicyName"
+        },
+        "Path": "/",
+        "PolicyDocument": {
+          "Ref": "AutomationExecutionPolicy"
+        }
+      },
+      "Type": "AWS::IAM::ManagedPolicy"
+    },
+    "cloudformationExecutionRole": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": [
+                  {
+                    "Ref": "AdministratorAccountId"
+                  }
+                ]
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "ManagedPolicyArns": [
+          {
+            "Ref": "CustomTerraformPolicy"
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Ref": "ExecutionRoleName"
+        }
+      },
+      "Type": "AWS::IAM::Role"
+    }
+  }
+}

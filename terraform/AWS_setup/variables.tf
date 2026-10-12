@@ -64,6 +64,38 @@ variable "organizational_accounts" {
   EOT
 }
 
+variable "service_access_principals" {
+  type        = set(string)
+  description = "AWS service access principals that will be enabled for the organization"
+  default     = null
+}
+
+variable "delegated_administration" {
+  type        = map(string)
+  description = <<EOT
+  A map of services to delegate, and the friendly account name defined in var.organizational_accounts.
+  Example:
+  {
+    "sso.amazonaws.com" = "shared-services"
+  }
+  EOT
+  default     = null
+  validation {
+    condition = var.delegated_administration == null ? true : alltrue([
+      for service in keys(var.delegated_administration) :
+      contains(var.service_access_principals, service)
+    ])
+    error_message = "For the service to be delegated, it must be enabled via the 'service_access_principals' variable"
+  }
+  validation {
+    condition = var.delegated_administration == null ? true : alltrue([
+      for account in values(var.delegated_administration) :
+      contains(keys(var.organizational_accounts), account)
+    ])
+    error_message = "The account is not an organization account."
+  }
+}
+
 variable "admin_email" {
   type        = string
   description = "The email account for the root admin"
@@ -100,5 +132,9 @@ variable "required_child_sets_and_managed_policies" {
       "ReadOnlyAccess",
       "AWSBudgetsActionsWithAWSResourceControlAccess"
     ]
+  }
+  validation {
+    condition     = contains(keys(var.required_child_sets_and_managed_policies), "AdministratorAccess")
+    error_message = "Although you can customize the required policy sets, you will need one called 'AdministratorAccess'"
   }
 }
