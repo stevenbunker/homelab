@@ -52,20 +52,31 @@ resource "aws_organizations_organizational_unit" "current" {
 resource "aws_organizations_account" "current" {
   for_each = {
     for account, email in var.organizational_accounts :
-    account => coalesce(email, "${local.split_admin_email_if_gmail.user}+${account}${local.split_admin_email_if_gmail.domain}")
+    account => coalesce(
+      email,
+      account == "organization" ? var.admin_email :
+    "${local.split_admin_email_if_gmail.user}+${account}${local.split_admin_email_if_gmail.domain}")
   }
-  name      = "${aws_organizations_organization.current.master_account_name}-${each.key}"
+  name = (
+    each.key == "organization" ?
+    "${aws_organizations_organization.current.master_account_name}" :
+    "${aws_organizations_organization.current.master_account_name}-${each.key}"
+  )
   email     = each.value
   role_name = "${var.organization_name}_OrgRole"
   lifecycle {
     ignore_changes = [role_name]
   }
-  parent_id = lookup(
-    aws_organizations_organizational_unit.current,
-    coalesce([for k, v in var.organizational_units : k if contains(v, each.key)]...),
-    aws_organizations_organization.current.roots[0]
-  ).id
+  parent_id = (each.key == "organization" ?
+    aws_organizations_organization.current.roots[0].id :
+    lookup(
+      aws_organizations_organizational_unit.current,
+      coalesce([for k, v in var.organizational_units : k if contains(v, each.key)]...),
+      aws_organizations_organization.current.roots[0]
+    ).id
+  )
 }
+
 
 ## Delegate administration
 resource "aws_organizations_delegated_administrator" "current" {
@@ -157,9 +168,9 @@ resource "terraform_data" "account_permission_set_product" {
           account_id                    = lookup(aws_organizations_account.current, pair[1]).id
         }
       ],
-      region          = var.region
-      start_url       = var.sso_start_url
-      current_config  = data.local_file.config.content
+      region         = var.region
+      start_url      = var.sso_start_url
+      current_config = data.local_file.config.content
     }
   )
 }
@@ -169,12 +180,13 @@ data "local_file" "config" {
 }
 
 resource "aws_ssoadmin_account_assignment" "all" {
-  for_each = /*
- For the cartessian product of each chile account and permission set, assigne the permission set to a group, and the group to the accounts
-  */ { for pair in setproduct(keys(var.organizational_accounts), keys(var.required_child_sets_and_managed_policies)) :
-    "${pair[1]}.${pair[0]}" => {
-      account        = pair[0]
-      permission_set = pair[1]
+  /*
+ For the cartessian product of each child account and permission set, assigne the permission set to a group, and the group to the accounts
+  */
+  for_each = { for pair in setproduct(keys(var.required_child_sets_and_managed_policies), keys(var.organizational_accounts)) :
+    "${pair[0]}.${pair[1]}" => {
+      permission_set = pair[0]
+      account        = pair[1]
     }
   }
   instance_arn       = aws_ssoadmin_permission_set.all[each.value.permission_set].instance_arn

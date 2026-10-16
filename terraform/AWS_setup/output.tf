@@ -2,5 +2,5 @@
 
 output "aws_profile" {
   description = "Add the following session and profile to your .aws config:"
-  value = terraform_data.account_permission_set_product.output
+  value       = terraform_data.account_permission_set_product.output
 }

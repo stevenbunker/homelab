@@ -41,6 +41,7 @@ variable "organizational_units" {
 variable "organizational_accounts" {
   type = map(string)
   default = {
+    organization    = null,
     network         = null,
     shared-services = null,
     # security_tooling = null,
@@ -131,6 +132,9 @@ variable "required_child_sets_and_managed_policies" {
     TerraformExecute = [
       "ReadOnlyAccess",
       "AWSBudgetsActionsWithAWSResourceControlAccess"
+    ]
+    ReadOnly = [
+      "ReadOnlyAccess"
     ]
   }
   validation {
