@@ -1,20 +1,13 @@
 locals {
-  environment = "management"
-  split_admin_email_if_gmail = can(
-    regex("(?P<user>[^@]+)(?P<domain>@gmail\\.com)", var.admin_email)
-  ) ? regex("(?P<user>[^@]+)(?P<domain>@.*\\.com)", var.admin_email) : {}
-  accounts = toset([for account in aws_organizations_organization.current.accounts : account.id if account.status == "ACTIVE"])
-  permission_set_policy_assignments = flatten([
-    for set_name, policies in var.required_child_sets_and_managed_policies : [
-      for policy in policies : {
-        set_name    = set_name
-        policy_name = policy
-      }
-    ]
-  ])
+  templates         = "${path.module}/templates"
+  aws_config        = "${pathexpand("~/.aws")}/config"
+  environment       = "management"
   identity_store_id = data.aws_ssoadmin_instances.admin.identity_store_ids[0]
   instance_arn      = data.aws_ssoadmin_instances.admin.arns[0]
-  templates         = "${path.module}/templates"
+  split_admin_email_if_gmail = /* If the admin email is a gmail account, split the user and domain to later append the user with the friendly name of the account
+    */ can(
+    regex("(?P<user>[^@]+)(?P<domain>@gmail\\.com)", var.admin_email)
+  ) ? regex("(?P<user>[^@]+)(?P<domain>@.*\\.com)", var.admin_email) : {}
 }
 
 # Manage AWS Org
@@ -33,7 +26,7 @@ resource "aws_organizations_policy" "tag_policy" {
   name = "tag-policy"
   type = "TAG_POLICY"
   content = templatefile(
-  "${local.templates}/policies.json.tpl", {})
+  "${local.templates}/policies.json.tftpl", {})
   tags = {
     Project     = "compliance"
     Environment = local.environment
@@ -132,33 +125,68 @@ data "aws_iam_policy" "managed" {
 }
 
 resource "aws_ssoadmin_managed_policy_attachment" "all" {
-  for_each = tomap({
-    for assigned_policy in local.permission_set_policy_assignments : "${assigned_policy.set_name}.${assigned_policy.policy_name}" => assigned_policy
-  })
+  /*
+  Expand the policies for each permission set into one flat object.
+  This also requires creating a unique ephemeral key.
+  The for_each here feels kind of awkward and perhaps would be better abstracted into a module
+  */
+  for_each = merge([
+    for set_name, policies in var.required_child_sets_and_managed_policies : {
+      for policy in policies : "${set_name}.${policy}" => {
+        set_name    = set_name
+        policy_name = policy
+      }
+    }
+  ]...)
 
   instance_arn       = local.instance_arn
   managed_policy_arn = lookup(data.aws_iam_policy.managed, each.value.policy_name).arn
   permission_set_arn = lookup(aws_ssoadmin_permission_set.all, each.value.set_name).arn
 }
 
-## Assign the permission set to all accounts, and the admin to all groups
+resource "terraform_data" "account_permission_set_product" {
+  depends_on = [aws_organizations_account.current, aws_ssoadmin_permission_set.all, aws_identitystore_group.all]
+  input = templatefile(
+    "${local.templates}/aws_config.cfg.tftpl",
+    {
+      configs = [
+        for pair in setproduct(keys(aws_ssoadmin_permission_set.all), keys(aws_organizations_account.current)) :
+        {
+          permissionKey_account_product = "${pair[0]}.${pair[1]}"
+          role_name                     = pair[0]
+          account_id                    = lookup(aws_organizations_account.current, pair[1]).id
+        }
+      ],
+      region          = var.region
+      start_url       = var.sso_start_url
+      current_config  = data.local_file.config.content
+    }
+  )
+}
+
+data "local_file" "config" {
+  filename = local.aws_config
+}
+
 resource "aws_ssoadmin_account_assignment" "all" {
-  for_each = {
-    for pair in setproduct(local.accounts, keys(var.required_child_sets_and_managed_policies)) :
-    "${pair[0]}.${pair[1]}" => {
-      account_key    = pair[0]
+  for_each = /*
+ For the cartessian product of each chile account and permission set, assigne the permission set to a group, and the group to the accounts
+  */ { for pair in setproduct(keys(var.organizational_accounts), keys(var.required_child_sets_and_managed_policies)) :
+    "${pair[1]}.${pair[0]}" => {
+      account        = pair[0]
       permission_set = pair[1]
     }
   }
-  instance_arn       = local.instance_arn
-  permission_set_arn = lookup(aws_ssoadmin_permission_set.all, each.value.permission_set).arn
+  instance_arn       = aws_ssoadmin_permission_set.all[each.value.permission_set].instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.all[each.value.permission_set].arn
 
-  principal_id   = lookup(aws_identitystore_group.all, each.value.permission_set).group_id
+  principal_id   = aws_identitystore_group.all[each.value.permission_set].group_id
   principal_type = "GROUP"
 
-  target_id   = each.value.account_key
+  target_id   = aws_organizations_account.current[each.value.account].id
   target_type = "AWS_ACCOUNT"
 }
+
 
 resource "aws_identitystore_group_membership" "all" {
   for_each          = aws_identitystore_group.all
@@ -170,7 +198,7 @@ resource "aws_identitystore_group_membership" "all" {
 /*
 A custom terraform execute policy must be created in each child account before
 it can be attached to the terraform permissions set. Cloudformation will create
-and disseminate that permission set, as well as somne help roles.
+and disseminate that permission set, as well as somne helper roles.
 */
 
 resource "aws_cloudformation_stack_set" "automation_execution" {

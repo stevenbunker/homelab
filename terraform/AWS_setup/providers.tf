@@ -12,7 +12,7 @@ provider "aws" {
   alias = "stackset_delegate"
   profile = can(
     var.delegated_administration["member.org.stacksets.cloudformation.amazonaws.com"]
-  ) ? "AdministratorAccess-${var.delegated_administration["member.org.stacksets.cloudformation.amazonaws.com"]}" : "default"
+  ) ? "AdministratorAccess.${var.delegated_administration["member.org.stacksets.cloudformation.amazonaws.com"]}" : "default"
   tag_policy_compliance = "error"
   default_tags {
     tags = {

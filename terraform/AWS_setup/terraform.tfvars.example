@@ -8,3 +8,4 @@ service_access_principals = [
   "compute-optimizer.amazonaws.com",
   "cost-optimization-hub.bcm.amazonaws.com",
 ]
+sso_start_url = "https://example-sso.region.portal.amazonaws.com"

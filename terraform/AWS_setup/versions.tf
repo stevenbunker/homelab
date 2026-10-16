@@ -5,5 +5,10 @@ terraform {
       version = "~> 6.0"
       source  = "hashicorp/aws"
     }
+    local = {
+      source = "hashicorp/local"
+      # Setting the provider version is a strongly recommended practice
+      # version = "..."
+    }
   }
 }

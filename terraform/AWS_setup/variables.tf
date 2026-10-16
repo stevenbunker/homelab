@@ -138,3 +138,7 @@ variable "required_child_sets_and_managed_policies" {
     error_message = "Although you can customize the required policy sets, you will need one called 'AdministratorAccess'"
   }
 }
+
+variable "sso_start_url" {
+  description = "Your SSO start URL"
+}
