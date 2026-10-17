@@ -1,17 +1,19 @@
-%{ for config in configs ~}
-%{ if !strcontains(current_config, "sso-session ${ config.role_name }") ~}
-[ssoaccount_permission_set_productsession ${ config.role_name }]
+%{ for session_name in sessions ~}
+%{ if !strcontains(current_config, "sso-session ${ session_name }") ~}
+[sso-session ${ session_name }]
 sso_start_url = ${ start_url }
 sso_region = ${ region }
 sso_registration_scopes = sso:account:access
-sso_role_name = ${ config.role_name }
+sso_role_name = ${ session_name }
 
 %{ endif ~}
-%{ if !strcontains(current_config, "profile ${config.permissionKey_account_product}") ~}
-[profile ${ config.permissionKey_account_product }]
-sso_session = ${ config.role_name }
-sso_account_id = ${ config.account_id }
-sso_role_name = ${ config.role_name }
+%{ endfor ~}
+%{ for profile in profiles ~}
+%{ if !strcontains(current_config, "profile ${profile.permissionKey_account_product}") ~}
+[profile ${ profile.permissionKey_account_product }]
+sso_session = ${ profile.role_name }
+sso_account_id = ${ profile.account_id }
+sso_role_name = ${ profile.role_name }
 region = ${ region }
 output = json
 

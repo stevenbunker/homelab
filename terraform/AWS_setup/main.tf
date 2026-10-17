@@ -160,14 +160,17 @@ resource "terraform_data" "account_permission_set_product" {
   input = templatefile(
     "${local.templates}/aws_config.cfg.tftpl",
     {
-      configs = [
+      profiles = [
         for pair in setproduct(keys(aws_ssoadmin_permission_set.all), keys(aws_organizations_account.current)) :
         {
           permissionKey_account_product = "${pair[0]}.${pair[1]}"
           role_name                     = pair[0]
           account_id                    = lookup(aws_organizations_account.current, pair[1]).id
         }
-      ],
+      ]
+      sessions = toset([
+        for session_name in keys(aws_ssoadmin_permission_set.all) : session_name
+      ])
       region         = var.region
       start_url      = var.sso_start_url
       current_config = data.local_file.config.content

@@ -1,6 +1,0 @@
-  %{for config in setunion(
-  [for set_account in terraform_data.account_permission_set_product.output : set_account.profile if !strcontains(data.local_file.config.content, set_account.profile)],
-  [for set_account in terraform_data.account_permission_set_product.output : set_account.session if !strcontains(data.local_file.config.content, set_account.session)]
-)}
-${config}
-%{endfor}
