@@ -1,0 +1,38 @@
+- name: Start stopped instances
+  gather_facts: false
+  hosts: state_stopped
+  tasks:
+    - name: Get Info
+      amazon.aws.ec2_instance_info:
+        aws_profile: "{{ ansible_aws_ssm_profile }}"
+      register: ec2_info
+      delegate_to: localhost
+      delegate_facts: true
+
+    - name: Start instance
+      amazon.aws.ec2_instance:
+        aws_profile: "{{ ansible_aws_ssm_profile }}"
+        state: started
+      delegate_to: localhost
+      delegate_facts: true
+
+- name: Connect to hosts
+  gather_facts: false
+  hosts: all
+  tasks:
+    - name: Wait for connect
+      ansible.builtin.wait_for_connection:
+
+    - name: Ping
+      ansible.builtin.ping:
+
+- name: Re-stop hosts
+  gather_facts: false
+  hosts: state_stopped
+  tasks:
+    - name: Stop instance
+      amazon.aws.ec2_instance:
+        aws_profile: "{{ ansible_aws_ssm_profile }}"
+        state: stopped
+      delegate_to: localhost
+      delegate_facts: true

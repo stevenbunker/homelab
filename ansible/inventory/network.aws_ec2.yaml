@@ -1,7 +1,9 @@
 plugin: amazon.aws.aws_ec2
-profile: ansible
+profile: AdministratorAccess.network
 regions:
   - us-west-1
+hostnames:
+  - instance-id
 keyed_groups:
   - prefix: Environment
     key: ec2_tags.Environment
@@ -10,7 +12,11 @@ keyed_groups:
   - prefix: OS_version
     key: ec2_tags.OS_version
     parent_group: "OS_family_{{ ec2_tags.OS_version | regex_replace('-(?:\\d+\\.?)*','') }}"
-  - key: placement.region
-    prefix: aws_region
-    parent_group: "aws"
-route53_enabled: true
+  - prefix: aws_region
+    key: placement.region
+    parent_group: "aws_ec2"
+  - prefix: state
+    key: state.name
+    parent_group: "aws_ec2"
+groups:
+  account_network: "true"
