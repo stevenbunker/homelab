@@ -82,3 +82,8 @@ variable "egress_rules" {
     }
   }
 }
+
+variable "hosted_zone_name" {
+  description = "The name of a hosted zone domain you own in route53"
+  default     = null
+}

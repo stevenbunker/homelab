@@ -23,7 +23,7 @@ resource "aws_subnet" "public1" {
 }
 
 resource "aws_route53_zone" "main" {
-  name = local.hosted_zone_name
+  name = var.hosted_zone_name
   tags = {
     Project     = "network"
     Environment = "shared"
