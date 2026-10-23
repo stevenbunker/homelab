@@ -4,8 +4,9 @@ locals {
   environment       = "management"
   identity_store_id = data.aws_ssoadmin_instances.admin.identity_store_ids[0]
   instance_arn      = data.aws_ssoadmin_instances.admin.arns[0]
-  split_admin_email_if_gmail = /* If the admin email is a gmail account, split the user and domain to later append the user with the friendly name of the account
-    */ can(
+  split_admin_email_if_gmail = /*
+  If the admin email is a gmail account, split the user and domain to later append the user with the friendly name of the account
+  */ can(
     regex("(?P<user>[^@]+)(?P<domain>@gmail\\.com)", var.admin_email)
   ) ? regex("(?P<user>[^@]+)(?P<domain>@.*\\.com)", var.admin_email) : {}
 }
@@ -20,6 +21,8 @@ resource "aws_organizations_organization" "current" {
   ]
   aws_service_access_principals = var.service_access_principals
 }
+
+resource "aws_ram_sharing_with_organization" "current" {}
 
 ## Define org policies
 resource "aws_organizations_policy" "tag_policy" {
