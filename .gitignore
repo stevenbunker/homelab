@@ -6,3 +6,4 @@ local_llm/*
 *.tfbackend
 *state*
 all.yaml
+*test*

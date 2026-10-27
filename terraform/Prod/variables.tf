@@ -19,7 +19,8 @@ variable "environments" {
   default = [
     "prod",
     "shared",
-  "test"]
+    "test"
+  ]
 }
 
 variable "instance_type" {
@@ -39,47 +40,66 @@ variable "allowed_ec2_os" {
   type        = list(string)
 }
 
-variable "aws_vpc_cidr" {
-  description = "IP range for VPC in cidr notation"
-  type        = string
-}
-
-variable "ssh_ip_allowed" {
-  description = "CIDR notation for allowed SSH"
-  type        = string
-}
-
-# Ingress rules map:
-# Use either cidr_ipv4 OR source_sg_id
-variable "ingress_rules" {
+variable "vpcs" {
+  description = "VPCs in the organization"
   type = map(object({
-    from_port    = number
-    to_port      = number
-    ip_protocol  = optional(string, "tcp")
-    cidr_ipv4    = optional(string)
-    source_sg_id = optional(string)
-    description  = optional(string)
+    region           = string
+    default          = bool
+    internet_gateway = bool
+    vpc_cidr         = string
+    subnets = map(object({
+      public     = bool
+      default    = bool
+      cidr_block = string
+    }))
   }))
-}
-# Egress rules map (default allow all outbound):
-# Use either cidr_ipv4 OR dest_sg_id
-variable "egress_rules" {
-  type = map(object({
-    ip_protocol = optional(string, "-1")
-    from_port   = optional(number, 0)
-    to_port     = optional(number, 0)
-    cidr_ipv4   = optional(string)
-    dest_sg_id  = optional(string)
-    description = optional(string)
-  }))
-  default = {
-    allow_all_outbound = {
-      ip_protocol = "-1"
-      from_port   = 0
-      to_port     = 0
-      cidr_ipv4   = "0.0.0.0/0"
-      description = "Allow all outbound"
-    }
+  validation {
+    error_message = "VPC name must start with it's region"
+    condition = alltrue([
+      for vpc_name, vpc_values in var.vpcs :
+      strcontains(
+        vpc_name,
+        vpc_values.region
+      )
+    ])
+  }
+  validation {
+    error_message = "Only one default VPC allowed per region"
+    condition = alltrue([
+      for region, vpcs in {
+        for vpc_name, vpc_values in var.vpcs :
+        vpc_values.region => vpc_name... if vpc_values.default
+      } :
+    length(vpcs) < 2])
+  }
+  validation {
+    error_message = "Only one default subnet allowed per public or private vpc"
+    condition = alltrue([
+      for defaults, subnets in merge([
+        for vpc_name, vpc_values in var.vpcs : {
+          for subnet_key, subnet_values in vpc_values.subnets :
+          "${vpc_name}.${subnet_values.public ? "public" : "private"}_default" => subnet_key... if subnet_values.default
+        }
+      ]...) :
+      length(subnets) < 2
+    ])
+  }
+  validation {
+    error_message = "vpc_cidr must be a valid cidr block"
+    condition = alltrue([
+      for vpc_name, vpc_values in var.vpcs :
+      can(cidrhost(vpc_values.vpc_cidr, 0))
+    ])
+  }
+  validation {
+    error_message = "All subnets must be a valid cidr block"
+    condition = alltrue(flatten([
+      for vpc_name, vpc_values in var.vpcs :
+      [
+        for subnet_name, subnet_values in vpc_values.subnets :
+        can(cidrhost(subnet_values.cidr_block, 0))
+      ]
+    ]))
   }
 }
 

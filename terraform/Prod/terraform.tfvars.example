@@ -1,4 +1,19 @@
-aws_vpc_cidr = "YOUR CIDR"
-ssh_ip_allowed = "ALLOWED SSH IPS"
-required_tags = []
-region
+vpcs = {
+  us-east-1_DEFAULT_VPC = {
+    region           = "us-east-1",
+    default          = true,
+    internet_gateway = true,
+    vpc_cidr         = SOME_VPC_CIDR,
+    subnets = {
+      default_public = {
+        public     = true,
+        default    = true,
+        cidr_block = SOME_CIDR_BLOCK
+      }
+    }
+  },
+}
+region = "us-est-1"
+allowed_ec2_os = [
+  "ubuntu-26.04",
+]

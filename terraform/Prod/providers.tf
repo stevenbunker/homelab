@@ -12,7 +12,6 @@ provider "aws" {
 provider "aws" {
   alias   = "org_readonly"
   profile = "ReadOnly.organization"
-  region  = var.region
 }
 
 provider "aws" {

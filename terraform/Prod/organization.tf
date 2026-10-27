@@ -3,15 +3,14 @@ data "aws_organizations_organization" "current" {
 }
 
 data "aws_organizations_delegated_administrators" "current" {
-  provider          = aws.org_readonly
-  for_each          = data.aws_organizations_organization.current.aws_service_access_principals
-  service_principal = each.key
+  provider = aws.org_readonly
 }
 
-output "test" {
-  value = {
-    for service, delegated_account in data.aws_organizations_delegated_administrators.current :
-    service => coalesce(delegated_account.delegated_administrators[*].id...)
-    if length(delegated_account.delegated_administrators) > 0
-  }
+data "aws_organizations_delegated_services" "current" {
+  provider = aws.org_readonly
+  for_each = toset([
+    for delegated_administrator in data.aws_organizations_delegated_administrators.current.delegated_administrators :
+    delegated_administrator.id
+  ])
+  account_id = each.key
 }
