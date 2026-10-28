@@ -1,5 +1,5 @@
 module "ovpn" {
-  source = "${local.modules_path}/ec2_open_vpn"
+  source = "${local.modules_path}/open_vpn"
   providers = {
     aws = aws.network
   }
