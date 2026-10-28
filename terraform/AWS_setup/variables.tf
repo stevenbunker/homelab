@@ -20,7 +20,8 @@ variable "environments" {
     "prod",
     "shared",
     "management",
-  "test"]
+    "test",
+  ]
 }
 
 variable "organizational_units" {
