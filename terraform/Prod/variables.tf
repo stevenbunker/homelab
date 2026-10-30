@@ -44,12 +44,12 @@ variable "vpcs" {
   description = "VPCs in the organization"
   type = map(object({
     region           = string
-    default          = bool
-    internet_gateway = bool
+    default          = optional(bool, false)
+    internet_gateway = optional(bool, true)
     vpc_cidr         = string
     subnets = map(object({
-      public     = bool
-      default    = bool
+      public     = optional(bool, false)
+      default    = optional(bool, false)
       cidr_block = string
     }))
   }))

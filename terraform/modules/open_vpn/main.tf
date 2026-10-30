@@ -22,6 +22,13 @@ resource "aws_instance" "this" {
     http_tokens = "required"
   }
 
+  lifecycle {
+    ignore_changes = [
+      associate_public_ip_address,
+      vpc_security_group_ids
+    ]
+  }
+
   tags = {
     Route53HostedZoneId = aws_route53_zone.this.zone_id,
     Route53RecordName   = "${replace(data.aws_ami.this.region, "-", "")}.${aws_route53_zone.this.name}"
