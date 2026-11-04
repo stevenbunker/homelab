@@ -12,11 +12,13 @@ module "ovpn" {
   hosted_zone_name = var.hosted_zone_name
   vpc_id           = aws_vpc.main[local.default_vpc.name].id
   subnet_id        = aws_subnet.main[local.default_public_subnet.name].id
+  environment      = local.environment
 
   depends_on = [aws_subnet.main, aws_route_table.public]
+  region     = var.region
 }
 
 resource "aws_network_interface_sg_attachment" "ovpn_intravpc" {
   network_interface_id = module.ovpn.open_vpn.open_vpn_network_interface_id
-  security_group_id    = aws_security_group.intra_vpc.id
+  security_group_id    = aws_security_group.intra_vpc[local.default_vpc.name].id
 }

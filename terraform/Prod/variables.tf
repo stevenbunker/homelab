@@ -47,10 +47,10 @@ variable "vpcs" {
     default          = optional(bool, false)
     internet_gateway = optional(bool, true)
     vpc_cidr         = string
-    subnets = map(object({
-      public     = optional(bool, false)
-      default    = optional(bool, false)
-      cidr_block = string
+    subnets = list(object({
+      public  = optional(bool, false)
+      default = optional(bool, false)
+      # cidr_block = string
     }))
   }))
   validation {
@@ -91,16 +91,16 @@ variable "vpcs" {
       can(cidrhost(vpc_values.vpc_cidr, 0))
     ])
   }
-  validation {
-    error_message = "All subnets must be a valid cidr block"
-    condition = alltrue(flatten([
-      for vpc_name, vpc_values in var.vpcs :
-      [
-        for subnet_name, subnet_values in vpc_values.subnets :
-        can(cidrhost(subnet_values.cidr_block, 0))
-      ]
-    ]))
-  }
+  # validation {
+  #   error_message = "All subnets must be a valid cidr block"
+  #   condition = alltrue(flatten([
+  #     for vpc_name, vpc_values in var.vpcs :
+  #     [
+  #       for subnet_name, subnet_values in vpc_values.subnets :
+  #       can(cidrhost(subnet_values.cidr_block, 0))
+  #     ]
+  #   ]))
+  # }
 }
 
 variable "hosted_zone_name" {

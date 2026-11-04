@@ -5,7 +5,8 @@ provider "aws" {
   default_tags {
     tags = {
       managedBy = "terraform"
-    region = var.region }
+      region    = var.region
+    }
   }
 }
 
@@ -22,7 +23,8 @@ provider "aws" {
   default_tags {
     tags = {
       managedBy = "terraform"
-    region = var.region }
+      region    = var.region
+    }
   }
 }
 
@@ -34,6 +36,7 @@ provider "aws" {
   default_tags {
     tags = {
       managedBy = "terraform"
-    region = var.region }
+      region    = var.region
+    }
   }
 }
