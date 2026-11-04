@@ -190,6 +190,8 @@ resource "aws_ssoadmin_account_assignment" "all" {
 
   target_id   = aws_organizations_account.current[each.value.account].id
   target_type = "AWS_ACCOUNT"
+
+  depends_on = [ aws_cloudformation_stack_set_instance.automation_execution ]
 }
 
 

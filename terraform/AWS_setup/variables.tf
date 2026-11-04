@@ -35,6 +35,7 @@ variable "organizational_units" {
     infrastructure = [
       "network",
       "shared-services",
+      "workloads"
     ]
   }
 }
@@ -45,9 +46,9 @@ variable "organizational_accounts" {
     organization    = null,
     network         = null,
     shared-services = null,
+    workloads       = null,
     # security_tooling = null,
     # security_logs = null,
-    # workloads
   }
   validation {
     condition = alltrue([
