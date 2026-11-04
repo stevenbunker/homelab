@@ -114,7 +114,6 @@ resource "aws_route_table" "public" {
       ]
     ]) : subnet.vpc_key => subnet if subnet.subnet_config.public
   }
-  #{ for subnet_key, subnet in local.subnets : subnet_key => subnet if subnet.subnet_config.public }
   vpc_id = aws_vpc.main[each.value.vpc_key].id
   region = each.value.vpc_region
   tags = {
@@ -126,8 +125,7 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route_table_association" "public" {
-  for_each = { for subnet_key, subnet in local.subnets : subnet_key => subnet if subnet.subnet_config.public }
-  # aws_route_table.public
+  for_each       = { for subnet_key, subnet in local.subnets : subnet_key => subnet if subnet.subnet_config.public }
   region         = each.value.vpc_region
   subnet_id      = aws_subnet.main[each.key].id
   route_table_id = aws_route_table.public[each.value.vpc_key].id
