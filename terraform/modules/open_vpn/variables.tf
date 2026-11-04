@@ -1,3 +1,8 @@
+variable "region" {
+  description = "AWS region"
+  type        = string
+}
+
 variable "instance_type" {
   description = "EC2 instance type (must be a GPU instance)"
   type        = string
@@ -25,7 +30,7 @@ variable "subnet_id" {
   type        = string
 }
 
-variable "Environment" {
+variable "environment" {
   description = "What to set as the Environment tag in aws"
   type        = string
   default     = "test"

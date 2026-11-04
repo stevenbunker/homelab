@@ -1,13 +1,3 @@
-data "aws_ami" "this" { /*
-This relies on a snapshot of a valid VPN
-TODO: use a generic ubuntu AMI and do the setup with ansible
-*/
-  filter {
-    name   = "name"
-    values = ["ovpn-copy-ami"]
-  }
-}
-
 data "aws_subnet" "this" {
   id = var.subnet_id
 
@@ -24,11 +14,11 @@ data "aws_vpc" "this" {
 }
 
 data "aws_route_table" "this" {
-  subnet_id = data.aws_subnet.this.id
+  subnet_id = var.subnet_id
 }
 
 # Get the current record from  Route53
 data "aws_route53_records" "this" {
   zone_id    = aws_route53_zone.this.zone_id
-  name_regex = "${replace(data.aws_ami.this.region, "-", "")}.${aws_route53_zone.this.name}"
+  name_regex = local.Route53RecordName
 }
