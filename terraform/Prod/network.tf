@@ -72,13 +72,31 @@ resource "aws_vpc" "main" {
 }
 
 resource "aws_internet_gateway" "main" {
-  for_each = { for vpc_key, vpc in var.vpcs : vpc_key => vpc if vpc.internet_gateway }
-  vpc_id   = lookup(aws_vpc.main, each.key).id
+  for_each = {
+    for vpc_key, vpc in var.vpcs : vpc_key => vpc
+    if anytrue([
+      for subnet in vpc.subnets : subnet.public
+    ])
+  }
+  vpc_id = aws_vpc.main[each.key].id
+  region = each.value.region
+  tags = {
+    Project     = "network"
+    Environment = local.environment
+    region      = each.value.region
+    Name        = "${each.key}_igw"
+  }
+}
+
+resource "aws_egress_only_internet_gateway" "main" {
+  for_each = var.vpcs
+  vpc_id   = aws_vpc.main[each.key].id
   region   = each.value.region
   tags = {
     Project     = "network"
     Environment = local.environment
     region      = each.value.region
+    Name        = "${each.key}_egress-only-igw"
   }
 }
 
@@ -102,6 +120,86 @@ resource "aws_subnet" "main" {
 # Resources for public subnet
 # ----
 
+resource "aws_network_acl" "public" {
+  for_each = var.vpcs
+  region   = each.value.region
+  vpc_id   = aws_vpc.main[each.key].id
+
+  tags = {
+    Name = "${each.key}_public"
+  }
+}
+
+resource "aws_network_acl_rule" "egress_all" {
+  for_each        = aws_network_acl.public
+  region          = each.value.region
+  network_acl_id  = each.value.id
+  rule_number     = 100
+  egress          = true
+  protocol        = -1
+  rule_action     = "allow"
+  cidr_block = "0.0.0.0/0"
+}
+
+resource "aws_network_acl_rule" "udp_1194" {
+  for_each        = aws_network_acl.public
+  region          = each.value.region
+  network_acl_id  = each.value.id
+  rule_number     = 100
+  egress          = false
+  protocol        = "udp"
+  rule_action     = "allow"
+  cidr_block = "0.0.0.0/0"
+  from_port       = 1194
+  to_port         = 1194
+}
+
+resource "aws_network_acl_rule" "tcp_443" {
+  for_each        = aws_network_acl.public
+  region          = each.value.region
+  network_acl_id  = each.value.id
+  rule_number     = 150
+  egress          = false
+  protocol        = "tcp"
+  rule_action     = "allow"
+  cidr_block = "0.0.0.0/0"
+  from_port       = 443
+  to_port         = 443
+}
+
+resource "aws_network_acl_rule" "tcp_ephemeral" {
+  for_each        = aws_network_acl.public
+  region          = each.value.region
+  network_acl_id  = each.value.id
+  rule_number     = 200
+  egress          = false
+  protocol        = "tcp"
+  rule_action     = "allow"
+  cidr_block = "0.0.0.0/0"
+  from_port       = 1024
+  to_port         = 65535
+}
+
+resource "aws_network_acl_rule" "udp_ephemeral" {
+  for_each        = aws_network_acl.public
+  region          = each.value.region
+  network_acl_id  = each.value.id
+  rule_number     = 250
+  egress          = false
+  protocol        = "udp"
+  rule_action     = "allow"
+  cidr_block = "0.0.0.0/0"
+  from_port       = 1024
+  to_port         = 65535
+}
+
+resource "aws_network_acl_association" "public" {
+  for_each       = { for subnet_key, subnet in local.subnets : subnet_key => subnet if subnet.subnet_config.public }
+  region         = each.value.vpc_region
+  network_acl_id = aws_network_acl.public[each.value.vpc_key].id
+  subnet_id      = aws_subnet.main[each.key].id
+}
+
 resource "aws_route_table" "public" {
   for_each = {
     for subnet in flatten([
@@ -124,6 +222,13 @@ resource "aws_route_table" "public" {
   }
 }
 
+resource "aws_main_route_table_association" "main" {
+  for_each         = aws_vpc.main
+  region = each.value.region
+  vpc_id         = each.value.id
+  route_table_id = lookup(aws_route_table.public, each.key, null) != null ? aws_route_table.public[each.key].id : aws_route_table.private[each.key].id
+}
+
 resource "aws_route_table_association" "public" {
   for_each       = { for subnet_key, subnet in local.subnets : subnet_key => subnet if subnet.subnet_config.public }
   region         = each.value.vpc_region
@@ -142,6 +247,60 @@ resource "aws_route" "igw" {
 # ----
 # Resources for default private subnet
 # ----
+
+resource "aws_network_acl" "private" {
+  for_each = var.vpcs
+  region   = each.value.region
+  vpc_id   = aws_vpc.main[each.key].id
+
+  tags = {
+    Name = "${each.key}_private"
+  }
+}
+
+resource "aws_network_acl_rule" "ipv6_egress_all" {
+  for_each        = aws_network_acl.private
+  region          = each.value.region
+  network_acl_id  = each.value.id
+  rule_number     = 100
+  egress          = true
+  protocol        = -1
+  rule_action     = "allow"
+  ipv6_cidr_block = "::/0"
+}
+
+resource "aws_network_acl_rule" "ipv6_ingress_tcp_ephemeral" {
+  for_each        = aws_network_acl.private
+  region          = each.value.region
+  network_acl_id  = each.value.id
+  rule_number     = 200
+  egress          = false
+  protocol        = "tcp"
+  rule_action     = "allow"
+  ipv6_cidr_block = "::/0"
+  from_port       = 1024
+  to_port         = 65535
+}
+
+resource "aws_network_acl_rule" "ipv6_ingress_udp_ephemeral" {
+  for_each        = aws_network_acl.private
+  region          = each.value.region
+  network_acl_id  = each.value.id
+  rule_number     = 300
+  egress          = false
+  protocol        = "udp"
+  rule_action     = "allow"
+  ipv6_cidr_block = "::/0"
+  from_port       = 1024
+  to_port         = 65535
+}
+
+resource "aws_network_acl_association" "private" {
+  for_each       = { for subnet_key, subnet in local.subnets : subnet_key => subnet if !subnet.subnet_config.public }
+  region         = each.value.vpc_region
+  network_acl_id = aws_network_acl.private[each.value.vpc_key].id
+  subnet_id      = aws_subnet.main[each.key].id
+}
 
 resource "aws_route_table" "private" {
   for_each = {
@@ -172,6 +331,14 @@ resource "aws_route_table_association" "private" {
   route_table_id = aws_route_table.private[each.value.vpc_key].id
 
   depends_on = [aws_subnet.main]
+}
+
+resource "aws_route" "egress_only_igw" {
+  for_each                    = aws_route_table.private
+  region                      = each.value.region
+  route_table_id              = each.value.id
+  destination_ipv6_cidr_block = "::/0"
+  egress_only_gateway_id      = aws_egress_only_internet_gateway.main[each.key].id
 }
 
 
