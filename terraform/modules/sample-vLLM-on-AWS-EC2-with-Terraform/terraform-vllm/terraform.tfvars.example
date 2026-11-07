@@ -1,0 +1,20 @@
+# Copy this to terraform.tfvars and customize
+
+region        = "us-west-2"
+instance_type = "g5.xlarge"
+model_name    = "Qwen/Qwen2.5-0.5B-Instruct"
+max_model_len = 8192
+
+# Leave these empty to create new networking resources.
+# Fill them in to use an existing VPC/subnets.
+#
+# The instance runs in the PRIVATE subnet and has no public endpoint.
+# Public subnet(s) are only used for the NAT gateway when creating new
+# networking (so the private instance can pull the image/model).
+#
+# vpc_id            = "vpc-0123456789abcdef0"
+# public_subnet_ids = ["subnet-aaa", "subnet-bbb"]
+# private_subnet_id = "subnet-ccc"
+
+# No SSH key needed — access the instance via SSM Session Manager:
+# aws ssm start-session --target <instance-id> --region us-west-2
