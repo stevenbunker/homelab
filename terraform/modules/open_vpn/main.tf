@@ -3,30 +3,32 @@ locals {
   Route53RecordName = "${replace(var.region, "-", "")}.${var.hosted_zone_name}"
 }
 
-resource "aws_ami" "this" { /*
-This relies on a snapshot of a valid VPN
-TODO: use a generic ubuntu AMI and do the setup with ansible
-*/
-  name                = "ovpn-copy-ami"
-  boot_mode           = "uefi"
-  ena_support         = true
-  root_device_name    = "/dev/sda1"
-  virtualization_type = "hvm"
-  tags = {
-    OS_version = "ubuntu-24.04"
+data "aws_ami" "vpn" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["ubuntu*26.04*"]
+  }
+
+  filter {
+    name   = "architecture"
+    values = ["x86_64"]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
   }
 }
 
-resource "aws_route53_zone" "this" {
-  name = var.hosted_zone_name
-  tags = {
-    Project     = local.Project
-    Environment = var.environment
-  }
+data "aws_route53_zone" "this" {
+  name         = var.hosted_zone_name
 }
 
 resource "aws_instance" "this" {
-  ami                         = aws_ami.this.id
+  ami                         = data.aws_ami.vpn.id
   instance_type               = var.instance_type
   subnet_id                   = var.subnet_id
   vpc_security_group_ids      = [aws_security_group.this.id]
@@ -45,11 +47,11 @@ resource "aws_instance" "this" {
   }
 
   tags = {
-    Route53HostedZoneId = aws_route53_zone.this.zone_id,
+    Route53HostedZoneId = data.aws_route53_zone.this.zone_id,
     Route53RecordName   = local.Route53RecordName
     Project             = local.Project
     Environment         = var.environment
-    OS_version          = aws_ami.this.tags.OS_version
+    OS_version          = "ubuntu-26.04"
     is_public           = data.aws_subnet.this.tags.is_public
   }
 }
@@ -92,7 +94,7 @@ resource "aws_vpc_security_group_egress_rule" "allow_all_outbound" {
 
 resource "aws_route53_record" "this" {
 
-  zone_id = aws_route53_zone.this.zone_id
+  zone_id = data.aws_route53_zone.this.zone_id
   name    = local.Route53RecordName
   type    = "A"
   ttl     = "300"

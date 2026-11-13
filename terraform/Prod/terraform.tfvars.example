@@ -1,19 +1,22 @@
 vpcs = {
   us-east-1_DEFAULT_VPC = {
-    region           = "us-east-1",
-    default          = true,
-    internet_gateway = true,
-    vpc_cidr         = SOME_VPC_CIDR,
-    subnets = {
-      default_public = {
-        public     = true,
-        default    = true,
-        cidr_block = SOME_CIDR_BLOCK
+    region             = "us-east-1",
+    vpc_netmask_length = 20
+    subnets = [
+      {
+        public                = true,
+        subnet_netmask_length = 22
+      },
+      {
+        public                = false,
+        subnet_netmask_length = 22
       }
-    }
-  },
+    ]
+  }
 }
-region = "us-est-1"
+region = "us-east-1"
 allowed_ec2_os = [
   "ubuntu-26.04",
 ]
+hosted_zone_name = "example.com"
+private_ipv4_cidr = "10.0.0.0/8"

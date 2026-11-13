@@ -31,7 +31,7 @@ data "aws_ami" "this" {
 resource "aws_instance" "this" {
   ami      = data.aws_ami.dlami.id
   instance_type = var.instance_type
-  subnet_id = var.private_subnet_id
+  subnet_id = var.subnet_id
 
   # iam_instance_profile {
   #   arn = aws_iam_instance_profile.vllm.arnq

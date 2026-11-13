@@ -3,16 +3,6 @@ variable "region" {
   type        = string
 }
 
-
-variable "aws_regions" {
-  description = "Allowed AWS regions"
-  type        = map(string)
-  default = {
-    us-east-1 : "east"
-    us-west-1 : "west"
-  }
-}
-
 variable "environments" {
   description = "Allowed environment options"
   type        = set(string)
@@ -43,14 +33,11 @@ variable "allowed_ec2_os" {
 variable "vpcs" {
   description = "VPCs in the organization"
   type = map(object({
-    region           = string
-    default          = optional(bool, false)
-    internet_gateway = optional(bool, true)
-    vpc_cidr         = string
+    region             = string
+    vpc_netmask_length = optional(number, 16)
     subnets = list(object({
-      public  = optional(bool, false)
-      default = optional(bool, false)
-      # cidr_block = string
+      public                = optional(bool, false)
+      subnet_netmask_length = optional(number, 24)
     }))
   }))
   validation {
@@ -63,47 +50,21 @@ variable "vpcs" {
       )
     ])
   }
+}
+
+variable "private_ipv4_cidr" {
+  description = "ipv4 cidr to be subdivided across VPCs and subnets"
+  type        = string
+  default     = "172.16.0.0/12"
+
   validation {
-    error_message = "Only one default VPC allowed per region"
-    condition = alltrue([
-      for region, vpcs in {
-        for vpc_name, vpc_values in var.vpcs :
-        vpc_values.region => vpc_name... if vpc_values.default
-      } :
-    length(vpcs) < 2])
+    error_message = "CIDR must have a netmask length less than 20"
+    condition     = can(cidrhost(var.private_ipv4_cidr, 4096))
   }
-  validation {
-    error_message = "Only one default subnet allowed per public or private vpc"
-    condition = alltrue([
-      for defaults, subnets in merge([
-        for vpc_name, vpc_values in var.vpcs : {
-          for subnet_key, subnet_values in vpc_values.subnets :
-          "${vpc_name}.${subnet_values.public ? "public" : "private"}_default" => subnet_key... if subnet_values.default
-        }
-      ]...) :
-      length(subnets) < 2
-    ])
-  }
-  validation {
-    error_message = "vpc_cidr must be a valid cidr block"
-    condition = alltrue([
-      for vpc_name, vpc_values in var.vpcs :
-      can(cidrhost(vpc_values.vpc_cidr, 0))
-    ])
-  }
-  # validation {
-  #   error_message = "All subnets must be a valid cidr block"
-  #   condition = alltrue(flatten([
-  #     for vpc_name, vpc_values in var.vpcs :
-  #     [
-  #       for subnet_name, subnet_values in vpc_values.subnets :
-  #       can(cidrhost(subnet_values.cidr_block, 0))
-  #     ]
-  #   ]))
-  # }
 }
 
 variable "hosted_zone_name" {
   description = "The name of a hosted zone domain you own in route53"
+  type        = string
   default     = null
 }

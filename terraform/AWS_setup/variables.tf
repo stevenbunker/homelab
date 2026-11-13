@@ -4,15 +4,6 @@ variable "region" {
   default     = "us-east-1"
 }
 
-variable "aws_regions" {
-  description = "Allowed AWS regions"
-  type        = map(string)
-  default = {
-    us-east-1 : "east"
-    us-west-1 : "west"
-  }
-}
-
 variable "environments" {
   description = "Allowed environment options"
   type        = set(string)
@@ -147,4 +138,9 @@ variable "required_child_sets_and_managed_policies" {
 
 variable "sso_start_url" {
   description = "Your SSO start URL"
+}
+variable "session_duration" {
+  description = "Duration an interactive SSO session is valid"
+  type        = string
+  default     = "PT1H"
 }

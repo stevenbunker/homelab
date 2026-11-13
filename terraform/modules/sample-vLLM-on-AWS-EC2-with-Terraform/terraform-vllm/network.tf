@@ -1,5 +1,5 @@
 data "aws_subnet" "this" {
-  id = var.private_subnet_id
+  id = var.subnet_id
 
   lifecycle {
     postcondition {

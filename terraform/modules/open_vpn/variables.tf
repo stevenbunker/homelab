@@ -35,3 +35,9 @@ variable "environment" {
   type        = string
   default     = "test"
 }
+
+variable "session_duration" {
+  description = "Duration an interactive SSO session is valid"
+  type = string
+  default = "PT1H"
+}

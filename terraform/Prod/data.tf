@@ -1,13 +1,13 @@
 locals {
   master_account_name = data.aws_organizations_organization.current.master_account_name
-  friendlyName_to_accountId = {
+  accountId_to_friendlyName = {
     for account in data.aws_organizations_organization.current.accounts :
     account.id => account.name == local.master_account_name ?
     "organization" :
     replace(account.name, "${local.master_account_name}-", "")
     if account.state == "ACTIVE"
   }
-  accountId_to_friendlyName = { for k, v in local.friendlyName_to_accountId : v => k }
+  friendlyName_to_accountId = { for k, v in local.accountId_to_friendlyName : v => k }
   delegated_service_to_delegated_adminId = merge([
     for delegated_account, values in data.aws_organizations_delegated_services.current :
     {
@@ -32,4 +32,8 @@ data "aws_organizations_delegated_services" "current" {
     delegated_administrator.id
   ])
   account_id = each.key
+}
+
+data "aws_organizations_organizational_units" "current" {
+  parent_id = data.aws_organizations_organization.current.roots[0].id
 }

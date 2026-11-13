@@ -111,10 +111,11 @@ resource "aws_identitystore_group" "all" {
 
 ## Create permission sets
 resource "aws_ssoadmin_permission_set" "all" {
-  for_each     = var.required_child_sets_and_managed_policies
-  name         = each.key
-  description  = "The permission set for ${each.key} in child accounts"
-  instance_arn = local.instance_arn
+  for_each         = var.required_child_sets_and_managed_policies
+  name             = each.key
+  description      = "The permission set for ${each.key} in child accounts"
+  session_duration = var.session_duration
+  instance_arn     = local.instance_arn
 }
 
 ## Get AWS managed policies and attach them to the permission sets
@@ -191,7 +192,7 @@ resource "aws_ssoadmin_account_assignment" "all" {
   target_id   = aws_organizations_account.current[each.value.account].id
   target_type = "AWS_ACCOUNT"
 
-  depends_on = [ aws_cloudformation_stack_set_instance.automation_execution ]
+  depends_on = [aws_cloudformation_stack_set_instance.automation_execution]
 }
 
 
