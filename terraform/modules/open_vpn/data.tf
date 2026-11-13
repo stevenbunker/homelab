@@ -17,7 +17,7 @@ data "aws_route_table" "this" {
   subnet_id = var.subnet_id
 }
 
-# Get the current record from  Route53
+## Get the current record from  Route53
 data "aws_route53_records" "this" {
   zone_id    = data.aws_route53_zone.this.zone_id
   name_regex = local.Route53RecordName

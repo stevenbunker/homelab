@@ -4,12 +4,10 @@ locals {
 }
 
 data "aws_ami" "vpn" {
-  most_recent = true
-  owners      = ["amazon"]
 
   filter {
     name   = "name"
-    values = ["ubuntu*26.04*"]
+    values = ["open-vpn"]
   }
 
   filter {
@@ -51,7 +49,7 @@ resource "aws_instance" "this" {
     Route53RecordName   = local.Route53RecordName
     Project             = local.Project
     Environment         = var.environment
-    OS_version          = "ubuntu-26.04"
+    OS_version          = "ubuntu-24.04"
     is_public           = data.aws_subnet.this.tags.is_public
   }
 }
@@ -90,19 +88,6 @@ resource "aws_vpc_security_group_egress_rule" "allow_all_outbound" {
   description       = "Allow all outbound"
   ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
-}
-
-resource "aws_route53_record" "this" {
-
-  zone_id = data.aws_route53_zone.this.zone_id
-  name    = local.Route53RecordName
-  type    = "A"
-  ttl     = "300"
-  records = (aws_instance.this.public_ip != "" ?
-    [aws_instance.this.public_ip, ] :
-    # if the instance is stopped, it will not have a public IP, instead we'll keep the existing A record value
-    # TODO: update the lambda that tracks state to remove the A record when the state becomes stopped
-  [for record in data.aws_route53_records.this.resource_record_sets[0].resource_records : record.value])
 }
 
 resource "aws_route" "this" {
